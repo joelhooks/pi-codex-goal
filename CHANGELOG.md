@@ -2,37 +2,7 @@
 
 ## Unreleased
 
-## 0.1.24 - 2026-06-04
-
-- Update the local pi development baseline to `@earendil-works/*` `0.78.1` and refresh the npm lockfile after reviewing the Pi `0.78.1` changelog, extension docs, package docs, and current examples.
-- Add the new Pi extension context fields to the runtime test harness so tests stay aligned with Pi `0.78.1` `ctx.mode` and command `ctx.getSystemPromptOptions()` APIs.
-- Confirm the goal extension remains forward-open for pi installs through optional wildcard pi runtime peers; Pi `0.78.1` is documented as the tested suggested floor, not a hard install requirement.
-
-## 0.1.23 - 2026-06-04
-
-- Add `/goal copy` to copy the current goal objective for active, paused, budget-limited, or completed goals.
-- Allow explicit `create_goal` replacement of non-complete goals and teach `/create-goal` to use it so users do not have to clear existing goals first.
-- Strengthen Windows doctor readiness with a disposable Crabbox clone SSH/tool probe when the stopped Parallels template has no live IP, while skipping that extra disposable probe during the full platform-smoke gate so the real Windows test lease is opened only once.
-
-## 0.1.22 - 2026-06-02
-
-- Tighten test-only TypeScript casts around goal state and recovery runtime harnesses.
-- Make the recovery runtime generic over its context so tests can use the minimal status context they exercise.
-- Add a type-hygiene regression check for banned TypeScript escape hatches such as double assertions, `as any`, `as never`, `any` annotations, and suppression comments.
-
-## 0.1.21 - 2026-06-01
-
-- Add a Crabbox-backed release gate for macOS, Ubuntu Linux, and native Windows.
-- Prove releases through packed package install, `pi install`, `pi list`, and a real model-backed goal runtime smoke on every required platform.
-- Add `check:platform-smoke` to the normal verification path and make `smoke:platform:all` run doctor before any target suite.
-- Strengthen platform doctor checks for Crabbox providers, Windows Parallels template/snapshot readiness, repository hygiene, package contents, auth presence, artifact redaction, and lease cleanup evidence.
-
-## 0.1.20 - 2026-05-31
-
-- Defer active-goal continuations queued by `session_compact` until the compaction event has unwound, avoiding nested prompt/auto-compaction races in Pi’s compaction lifecycle.
-- Accelerate pending idle continuation retries after compaction so length-stop recovery resumes promptly once the host is idle.
-- Ignore stale compact usage snapshots during reconstruction so old runtime entries cannot rewind usage, reactivate completed goals, or downgrade budget-limited goals.
-- Expand regression coverage for reported long-session failures: host retry cancellation, duplicate `session_compact` coalescing, shutdown cancellation, host overflow suppression, and stale runtime usage entries.
+- Defer hidden goal continuations queued from `session_compact` until the current macrotask finishes, avoiding Pi core auto-compaction re-entry while the host still owns the active compaction abort controller.
 
 ## 0.1.19 - 2026-05-31
 

@@ -80,7 +80,10 @@ export function createSessionEventHandlers(deps: GoalRuntimeSessionHandlerContex
       recoveryRuntime.onSessionCompact();
       status.refreshUi(ctx);
       if (!recoveryPhaseBlocksContinuation(runtimeState.recoveryState.phase)) {
-        continuation.maybeContinueAfterCurrentEvent(ctx);
+        // Pi core finishes compaction cleanup after session_compact handlers return.
+        // Defer the continuation one macrotask so triggerTurn cannot re-enter auto-compaction
+        // while AgentSession still owns the active compaction abort controller.
+        continuation.scheduleMaybeContinue(ctx, 0);
       }
     }) satisfies ExtensionHandler<SessionCompactEvent>,
 
