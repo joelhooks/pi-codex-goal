@@ -375,9 +375,13 @@ test("goal follow-up guard resets when custom-message continuations start", asyn
     message: queuedMessage,
   });
   assert.equal(harness.abortCount, 0);
+  // A continuation run that does work continues at once; no-progress backoff is covered in continuation-backoff.test.ts.
   await harness.emit("agent_end", {
     type: "agent_end",
-    messages: [assistantMessage("stop", { input: 5, output: 6 })],
+    messages: [{
+      ...assistantMessage("stop", { input: 5, output: 6 }),
+      content: [{ type: "toolCall", id: "t1", name: "edit", arguments: { path: "x" } }],
+    }],
   });
 
   const goal = harness.snapshot().goal;

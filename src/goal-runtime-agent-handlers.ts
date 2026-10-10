@@ -16,6 +16,7 @@ export function createAgentEventHandlers(deps: GoalRuntimeAgentHandlerContext) {
     onAgentEnd: (async (event, ctx) => {
       continuation.clearPassthroughContinuationInput();
       if (runStaleQueuedWorkPlan(runtimeState.staleQueuedWorkGuard.planAgentEnd(event.messages), ctx, deps)) {
+        continuation.discardRun();
         return;
       }
 
@@ -27,6 +28,7 @@ export function createAgentEventHandlers(deps: GoalRuntimeAgentHandlerContext) {
       stateController.flushGoalPersistence("runtime");
       if (abortedMessages.length > 0) {
         stateController.pauseForAbort(ctx);
+        continuation.discardRun();
         return;
       }
       const errorMessages = event.messages.filter(isErrorAssistantMessage);
@@ -35,6 +37,7 @@ export function createAgentEventHandlers(deps: GoalRuntimeAgentHandlerContext) {
         if (lastError) {
           handleAgentErrorMessage(lastError, ctx, deps);
         }
+        continuation.discardRun();
         return;
       }
 
@@ -42,10 +45,11 @@ export function createAgentEventHandlers(deps: GoalRuntimeAgentHandlerContext) {
         .reverse()
         .find((message) => message.role === "assistant");
       if (lastAssistant && recordAssistantContextOverflow(lastAssistant, ctx, deps)) {
+        continuation.discardRun();
         return;
       }
       resetErrorRecovery();
-      continuation.maybeContinue(ctx);
+      continuation.maybeContinueAfterRun(ctx, event.messages);
     }) satisfies ExtensionHandler<AgentEndEvent>,
   };
 }

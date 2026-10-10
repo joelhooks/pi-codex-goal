@@ -17,6 +17,11 @@ import type {
   QueuedGoalWorkMessageIdResolver,
 } from "./goal-runtime-event-handler-types.js";
 
+const isAutomaticContinuation = (message: unknown): boolean => {
+  const details = typeof message === "object" && message !== null ? (message as { details?: unknown }).details : undefined;
+  return typeof details === "object" && details !== null && (details as { kind?: unknown }).kind === "continuation";
+};
+
 export function createInputContextEventHandlers(
   deps: GoalRuntimeInputContextHandlerContext,
   queuedGoalWorkMessageIdForRuntime: QueuedGoalWorkMessageIdResolver,
@@ -109,6 +114,7 @@ export function createInputContextEventHandlers(
       const queuedGoalId = queuedGoalWorkMessageIdForRuntime(event.message);
       if (queuedGoalId === null) {
         if (event.message.role === "user" || event.message.role === "custom") {
+          continuation.noteRunMessage("external");
           runtimeState.staleQueuedWorkGuard.noteRunnableWorkStarted();
           continuation.clearContinuationState();
         }
@@ -118,6 +124,8 @@ export function createInputContextEventHandlers(
       continuation.clearContinuationStateFor(queuedGoalId);
       if (stateController.isCurrentActiveGoalId(queuedGoalId)) {
         runtimeState.staleQueuedWorkGuard.noteRunnableWorkStarted();
+        // Only an automatic continuation can back off; a /goal start or resume is Joel's.
+        continuation.noteRunMessage(isAutomaticContinuation(event.message) ? "continuation" : "external");
         if (isCommandResumeQueuedGoalMessage(event.message)) {
           resetErrorRecovery();
         }

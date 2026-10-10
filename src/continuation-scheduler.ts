@@ -1,5 +1,6 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 
+import { createContinuationBackoff, type RunKind } from "./continuation-backoff.js";
 import { compactContinuationPrompt, continuationGoalIdFromPrompt } from "./prompts.js";
 import {
   recoveryPhaseBlocksContinuation,
@@ -24,6 +25,7 @@ export function createContinuationScheduler(deps: ContinuationSchedulerDeps) {
   let continuationScheduledDelayMs: number | null = null;
   let continuationTimer: ReturnType<typeof setTimeout> | null = null;
   let passthroughContinuationInput: { text: string; turnIndex: number | null } | null = null;
+  const backoff = createContinuationBackoff();
 
   const clearContinuationTimer = (): void => {
     if (continuationTimer) {
@@ -165,6 +167,23 @@ export function createContinuationScheduler(deps: ContinuationSchedulerDeps) {
     sendContinuation(currentGoal);
   };
 
+  /** After a completed run: continue now, or after the no-progress backoff. */
+  const maybeContinueAfterRun = (ctx: ExtensionContext, messages: readonly unknown[]): void => {
+    const delayMs = backoff.noteRunEnd(messages);
+    if (delayMs === 0) {
+      maybeContinue(ctx);
+      return;
+    }
+    const goal = deps.getGoal();
+    if (!canPlanContinuationFor(goal)) {
+      return;
+    }
+    scheduleContinuationCheck(goal.goalId, ctx, delayMs);
+  };
+
+  const noteRunMessage = (kind: RunKind): void => backoff.noteRunMessage(kind);
+  const discardRun = (): void => backoff.discardRun();
+
   const maybeContinueAfterCurrentEvent = (ctx: ExtensionContext): void => {
     const goal = deps.getGoal();
     if (!canPlanContinuationFor(goal)) {
@@ -181,8 +200,11 @@ export function createContinuationScheduler(deps: ContinuationSchedulerDeps) {
     clearPassthroughContinuationInput,
     continuationGoalIdFromRuntimePrompt,
     markContinuationQueued,
+    discardRun,
     maybeContinue,
     maybeContinueAfterCurrentEvent,
+    maybeContinueAfterRun,
+    noteRunMessage,
     notePassthroughContinuationInput,
   };
 }

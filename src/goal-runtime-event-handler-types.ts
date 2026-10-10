@@ -56,6 +56,9 @@ export interface GoalRuntimeContinuationPort {
   markContinuationQueued: (goalId: string) => void;
   maybeContinue: (ctx: ExtensionContext) => void;
   maybeContinueAfterCurrentEvent: (ctx: ExtensionContext) => void;
+  maybeContinueAfterRun: (ctx: ExtensionContext, messages: readonly unknown[]) => void;
+  noteRunMessage: (kind: "continuation" | "external") => void;
+  discardRun: () => void;
   notePassthroughContinuationInput: (input: string) => void;
 }
 
@@ -113,7 +116,7 @@ export interface GoalRuntimeAgentHandlerContext extends StaleQueuedWorkEffectCon
   stateController: Pick<GoalStateController, "beginOverflowRecovery" | "flushGoalPersistence" | "pauseForAbort">;
   continuation: Pick<
     GoalRuntimeContinuationPort,
-    "clearPassthroughContinuationInput" | "maybeContinue"
+    "clearPassthroughContinuationInput" | "maybeContinue" | "maybeContinueAfterRun" | "discardRun"
   >;
   goalAccounting: Pick<GoalAccountingPort, "accountProgress">;
   recoveryRuntime: Pick<
