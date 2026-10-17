@@ -83,6 +83,9 @@ export function createInputContextEventHandlers(
     }) satisfies ExtensionHandler<ContextEvent, ContextEventResult | undefined>,
 
     onBeforeAgentStart: (async (event, ctx) => {
+      // Custom-message starts have no user prompt. onMessageStart handles their goal metadata.
+      if (!("prompt" in event)) return undefined;
+
       const continuationGoalId = continuation.continuationGoalIdFromRuntimePrompt(event.prompt);
       if (continuationGoalId !== null) {
         continuation.clearContinuationStateFor(continuationGoalId);

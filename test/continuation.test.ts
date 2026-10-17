@@ -12,6 +12,26 @@ import {
   queuedCustomMessage,
 } from "./support/runtime-harness.js";
 
+test("custom-message agent starts have no prompt and preserve the active goal", async () => {
+  const harness = createRuntimeHarness();
+  await harness.runCommand("ship it");
+  const queued = harness.sentMessages[0];
+  assert.ok(queued);
+  const message = queuedCustomMessage(queued);
+
+  const results = await harness.emit("before_agent_start", {
+    type: "before_agent_start",
+    messageType: "custom",
+    message,
+    systemPrompt: "",
+    systemPromptOptions: {},
+  });
+
+  assert.ok(results.every((result) => result === undefined));
+  await harness.emit("message_start", { type: "message_start", message });
+  assert.equal(harness.snapshot().goal?.status, "active");
+});
+
 test("aborted turns pause goals and do not queue continuation", async () => {
   const harness = createRuntimeHarness();
   await harness.runCommand("ship it");
